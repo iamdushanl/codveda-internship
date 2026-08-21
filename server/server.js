@@ -7,22 +7,21 @@ const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
 const startServer = async () => {
-  if (!MONGO_URI) {
-    console.error('Missing MONGO_URI. Add it to the .env file.');
-    process.exit(1);
+  if (MONGO_URI) {
+    try {
+      await mongoose.connect(MONGO_URI);
+      console.log('MongoDB connected successfully');
+    } catch (error) {
+      console.error('MongoDB connection failed:', error.message);
+      console.log('Starting server in fallback mode without database connection.');
+    }
+  } else {
+    console.log('No MongoDB URI configured. Starting server in fallback mode without database connection.');
   }
 
-  try {
-    await mongoose.connect(MONGO_URI);
-    console.log('MongoDB connected successfully');
-
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error('MongoDB connection failed:', error.message);
-    process.exit(1);
-  }
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 };
 
 startServer();
