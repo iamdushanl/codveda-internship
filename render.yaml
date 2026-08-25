@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: taskflow-backend
+    env: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        sync: false # Requires manual entry in Render dashboard for security
+      - key: JWT_SECRET
+        sync: false # Requires manual entry in Render dashboard for security

@@ -26,3 +26,19 @@ TaskFlow is a full-stack task management application built as a software enginee
 client/     Frontend application
 server/     Backend API
 docs/       Project documentation
+```
+
+## Features Implemented
+
+### Authentication & Authorization
+- User Registration & Password Hashing
+- JWT-based Login and Session Management
+- Protected routes using Authentication Middleware
+- Role-based access control (Admin & User roles)
+- Robust 401 & 403 error handling
+
+### Task Management (CRUD)
+- Create, Read, Update, and Delete tasks
+- Tasks are strictly scoped to the authenticated user
+- MongoDB integration via Mongoose with structured schemas
+- Comprehensive Unit Testing using Jest (Full coverage on controllers and middleware)
