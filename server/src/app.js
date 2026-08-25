@@ -3,6 +3,7 @@ const cors = require('cors');
 
 const ApiResponse = require('./utils/ApiResponse');
 const taskRoutes = require('./routes/taskRoutes');
+const userRoutes = require('./routes/userRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
 
@@ -28,6 +29,7 @@ app.get('/api/health', (req, res) => {
 
 // Routes
 app.use('/api/tasks', taskRoutes);
+app.use('/api/users', userRoutes);
 
 // Catch-all for 404 routes
 app.use(notFound);
