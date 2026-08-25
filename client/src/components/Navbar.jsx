@@ -58,7 +58,7 @@ const Navbar = () => {
 
       {/* User Profile / Actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <button style={{
+        <Link to="/login" style={{
           background: 'var(--accent)',
           color: 'white',
           border: 'none',
@@ -67,13 +67,14 @@ const Navbar = () => {
           fontWeight: '600',
           cursor: 'pointer',
           fontFamily: 'var(--sans)',
+          textDecoration: 'none',
           transition: 'opacity 0.2s'
         }}
         onMouseEnter={(e) => e.target.style.opacity = '0.9'}
         onMouseLeave={(e) => e.target.style.opacity = '1'}
         >
           Login
-        </button>
+        </Link>
         <div style={{
           width: '40px',
           height: '40px',

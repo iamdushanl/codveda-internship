@@ -5,6 +5,8 @@ import Navbar from './components/Navbar';
 import TaskCard from './components/TaskCard';
 import { useTasks } from './hooks/useTasks';
 import Tasks from './pages/Tasks';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import './index.css';
 
 const Dashboard = () => {
@@ -79,6 +81,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/tasks" element={<Tasks />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
           </Routes>
         </main>
       </div>
