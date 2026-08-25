@@ -28,7 +28,7 @@ const mockRes = () => {
 };
 
 /** Build a fake Express `req` */
-const mockReq = (body = {}, params = {}) => ({ body, params });
+const mockReq = (body = {}, params = {}) => ({ body, params, user: { _id: 'user123' } });
 
 // ──────────────────────────────────────────────────────────
 // createTask
@@ -77,7 +77,7 @@ describe('createTask', () => {
     expect(res.status).toHaveBeenCalledWith(201);
     // Verify that taskService.createTask was called with lowercased values
     expect(taskService.createTask).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'todo', priority: 'high' })
+      expect.objectContaining({ status: 'todo', priority: 'high', user: 'user123' })
     );
   });
 
@@ -93,7 +93,7 @@ describe('createTask', () => {
 
     expect(res.status).toHaveBeenCalledWith(201);
     expect(taskService.createTask).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'in-progress' })
+      expect.objectContaining({ status: 'in-progress', user: 'user123' })
     );
   });
 
@@ -173,7 +173,7 @@ describe('createTask', () => {
     expect(res.status).toHaveBeenCalledWith(201);
     // status and priority should be undefined (let defaults apply in the model/service)
     expect(taskService.createTask).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Simple Task' })
+      expect.objectContaining({ title: 'Simple Task', user: 'user123' })
     );
   });
 
@@ -209,6 +209,7 @@ describe('getAllTasks', () => {
 
     await getAllTasks(req, res);
 
+    expect(taskService.getAllTasks).toHaveBeenCalledWith('user123');
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ success: true, data: tasks })
@@ -244,6 +245,7 @@ describe('getTaskById', () => {
 
     await getTaskById(req, res);
 
+    expect(taskService.getTaskById).toHaveBeenCalledWith('abc', 'user123');
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ data: task })
@@ -289,7 +291,7 @@ describe('updateTask', () => {
 
     await updateTask(req, res, next);
 
-    expect(taskService.updateTask).toHaveBeenCalledWith('task1', { title: 'Updated' });
+    expect(taskService.updateTask).toHaveBeenCalledWith('task1', 'user123', { title: 'Updated' });
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
@@ -303,7 +305,7 @@ describe('updateTask', () => {
 
     await updateTask(req, res, next);
 
-    expect(taskService.updateTask).toHaveBeenCalledWith('task1', { status: 'done' });
+    expect(taskService.updateTask).toHaveBeenCalledWith('task1', 'user123', { status: 'done' });
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
@@ -317,7 +319,7 @@ describe('updateTask', () => {
 
     await updateTask(req, res, next);
 
-    expect(taskService.updateTask).toHaveBeenCalledWith('task1', { priority: 'low' });
+    expect(taskService.updateTask).toHaveBeenCalledWith('task1', 'user123', { priority: 'low' });
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
@@ -366,7 +368,7 @@ describe('updateTask', () => {
 
     await updateTask(req, res, next);
 
-    expect(taskService.updateTask).toHaveBeenCalledWith('task1', { dueDate: null });
+    expect(taskService.updateTask).toHaveBeenCalledWith('task1', 'user123', { dueDate: null });
     expect(res.status).toHaveBeenCalledWith(200);
   });
 });
@@ -385,6 +387,7 @@ describe('deleteTask', () => {
 
     await deleteTask(req, res);
 
+    expect(taskService.deleteTask).toHaveBeenCalledWith('task1', 'user123');
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ success: true })

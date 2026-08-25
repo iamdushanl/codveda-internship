@@ -7,21 +7,21 @@ const Task = require('../models/Task');
  * meaning the controller doesn't need to know anything about Mongoose or MongoDB.
  */
 class TaskService {
-  async getAllTasks() {
-    return await Task.find().sort({ createdAt: -1 });
+  async getAllTasks(userId) {
+    return await Task.find({ user: userId }).sort({ createdAt: -1 });
   }
 
-  async getTaskById(id) {
-    return await Task.findById(id);
+  async getTaskById(id, userId) {
+    return await Task.findOne({ _id: id, user: userId });
   }
 
   async createTask(taskData) {
     return await Task.create(taskData);
   }
 
-  async updateTask(id, updateData) {
+  async updateTask(id, userId, updateData) {
     // We fetch the task first to utilize Mongoose pre-save hooks (like syncing 'completed' status)
-    const task = await Task.findById(id);
+    const task = await Task.findOne({ _id: id, user: userId });
     
     if (!task) {
       return null;
@@ -37,8 +37,8 @@ class TaskService {
     return await task.save();
   }
 
-  async deleteTask(id) {
-    return await Task.findByIdAndDelete(id);
+  async deleteTask(id, userId) {
+    return await Task.findOneAndDelete({ _id: id, user: userId });
   }
 }
 

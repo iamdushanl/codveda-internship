@@ -4,7 +4,7 @@ const { TASK_STATUS_VALUES, TASK_PRIORITY_VALUES } = require('../constants/taskC
 
 exports.getAllTasks = async (req, res, next) => {
   try {
-    const tasks = await taskService.getAllTasks();
+    const tasks = await taskService.getAllTasks(req.user._id);
     return ApiResponse.ok(res, 'Tasks fetched successfully', tasks);
   } catch (error) {
     next(error);
@@ -13,7 +13,7 @@ exports.getAllTasks = async (req, res, next) => {
 
 exports.getTaskById = async (req, res, next) => {
   try {
-    const task = await taskService.getTaskById(req.params.id);
+    const task = await taskService.getTaskById(req.params.id, req.user._id);
 
     if (!task) {
       return ApiResponse.notFound(res, 'Task not found');
@@ -57,6 +57,7 @@ exports.createTask = async (req, res, next) => {
     }
 
     const newTask = await taskService.createTask({
+      user: req.user._id,
       title: title.trim(),
       description: description ? description.trim() : '',
       status,
@@ -101,7 +102,7 @@ exports.updateTask = async (req, res, next) => {
     if (priority !== undefined) updateData.priority = priority;
     if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
 
-    const updatedTask = await taskService.updateTask(req.params.id, updateData);
+    const updatedTask = await taskService.updateTask(req.params.id, req.user._id, updateData);
 
     if (!updatedTask) {
       return ApiResponse.notFound(res, 'Task not found');
@@ -115,7 +116,7 @@ exports.updateTask = async (req, res, next) => {
 
 exports.deleteTask = async (req, res, next) => {
   try {
-    const task = await taskService.deleteTask(req.params.id);
+    const task = await taskService.deleteTask(req.params.id, req.user._id);
 
     if (!task) {
       return ApiResponse.notFound(res, 'Task not found');

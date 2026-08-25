@@ -6,9 +6,12 @@ const {
   updateTask,
   deleteTask,
 } = require('../controllers/taskController');
+const { protect } = require('../middleware/authMiddleware');
 const validateObjectId = require('../middleware/validateObjectId');
 
 const router = express.Router();
+
+router.use(protect);
 
 router.route('/').get(getAllTasks).post(createTask);
 

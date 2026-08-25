@@ -3,6 +3,11 @@ const { TASK_STATUS, TASK_PRIORITY, TASK_STATUS_VALUES, TASK_PRIORITY_VALUES } =
 
 const taskSchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'User',
+    },
     title: {
       type: String,
       required: [true, 'Task title is required'],
