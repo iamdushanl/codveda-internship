@@ -1,10 +1,10 @@
-require('dotenv').config();
-
 const express = require('express');
 const cors = require('cors');
 
 const ApiResponse = require('./utils/ApiResponse');
 const taskRoutes = require('./routes/taskRoutes');
+const errorHandler = require('./middleware/errorHandler');
+const notFound = require('./middleware/notFound');
 
 const app = express();
 
@@ -26,15 +26,13 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Routes
 app.use('/api/tasks', taskRoutes);
 
-app.use((req, res) => {
-  return ApiResponse.notFound(res, 'Route not found');
-});
+// Catch-all for 404 routes
+app.use(notFound);
 
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  return ApiResponse.internal(res, 'Something went wrong on the server', err.message);
-});
+// Global Error Handler
+app.use(errorHandler);
 
 module.exports = app;

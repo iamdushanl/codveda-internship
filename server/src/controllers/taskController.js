@@ -1,19 +1,19 @@
-const Task = require('../models/Task');
+const taskService = require('../services/taskService');
 const ApiResponse = require('../utils/ApiResponse');
 const { TASK_STATUS_VALUES, TASK_PRIORITY_VALUES } = require('../constants/taskConstants');
 
-exports.getAllTasks = async (req, res) => {
+exports.getAllTasks = async (req, res, next) => {
   try {
-    const tasks = await Task.find().sort({ createdAt: -1 });
+    const tasks = await taskService.getAllTasks();
     return ApiResponse.ok(res, 'Tasks fetched successfully', tasks);
   } catch (error) {
-    return ApiResponse.internal(res, 'Failed to fetch tasks', error.message);
+    next(error);
   }
 };
 
-exports.getTaskById = async (req, res) => {
+exports.getTaskById = async (req, res, next) => {
   try {
-    const task = await Task.findById(req.params.id);
+    const task = await taskService.getTaskById(req.params.id);
 
     if (!task) {
       return ApiResponse.notFound(res, 'Task not found');
@@ -21,11 +21,11 @@ exports.getTaskById = async (req, res) => {
 
     return ApiResponse.ok(res, 'Task fetched successfully', task);
   } catch (error) {
-    return ApiResponse.internal(res, 'Failed to fetch task', error.message);
+    next(error);
   }
 };
 
-exports.createTask = async (req, res) => {
+exports.createTask = async (req, res, next) => {
   try {
     const { title, description, dueDate } = req.body;
     let { status, priority } = req.body;
@@ -34,7 +34,7 @@ exports.createTask = async (req, res) => {
       return ApiResponse.badRequest(res, 'Task title is required');
     }
 
-    // Normalize to lowercase so "TODO", "Todo", "todo" all work
+    // Normalize to lowercase
     if (status) status = status.toLowerCase();
     if (priority) priority = priority.toLowerCase();
 
@@ -56,7 +56,7 @@ exports.createTask = async (req, res) => {
       return ApiResponse.badRequest(res, 'Invalid due date format');
     }
 
-    const newTask = await Task.create({
+    const newTask = await taskService.createTask({
       title: title.trim(),
       description: description ? description.trim() : '',
       status,
@@ -66,18 +66,12 @@ exports.createTask = async (req, res) => {
 
     return ApiResponse.created(res, 'Task created successfully', newTask);
   } catch (error) {
-    return ApiResponse.internal(res, 'Failed to create task', error.message);
+    next(error);
   }
 };
 
-exports.updateTask = async (req, res) => {
+exports.updateTask = async (req, res, next) => {
   try {
-    const task = await Task.findById(req.params.id);
-
-    if (!task) {
-      return ApiResponse.notFound(res, 'Task not found');
-    }
-
     const { title, description, dueDate } = req.body;
     let { status, priority } = req.body;
 
@@ -85,57 +79,43 @@ exports.updateTask = async (req, res) => {
     if (status !== undefined && status !== null) status = String(status).toLowerCase();
     if (priority !== undefined && priority !== null) priority = String(priority).toLowerCase();
 
-    if (title !== undefined) {
-      if (typeof title !== 'string' || !title.trim()) {
-        return ApiResponse.badRequest(res, 'Task title is required');
-      }
-      task.title = title.trim();
+    // Basic Validation
+    if (title !== undefined && (typeof title !== 'string' || !title.trim())) {
+      return ApiResponse.badRequest(res, 'Task title is required');
+    }
+    if (status !== undefined && !TASK_STATUS_VALUES.includes(status)) {
+      return ApiResponse.badRequest(res, `Invalid status. Must be one of: ${TASK_STATUS_VALUES.join(', ')}`);
+    }
+    if (priority !== undefined && !TASK_PRIORITY_VALUES.includes(priority)) {
+      return ApiResponse.badRequest(res, `Invalid priority. Must be one of: ${TASK_PRIORITY_VALUES.join(', ')}`);
+    }
+    if (dueDate !== undefined && dueDate !== null && isNaN(Date.parse(dueDate))) {
+      return ApiResponse.badRequest(res, 'Invalid due date format');
     }
 
-    if (description !== undefined) {
-      task.description = description ? description.trim() : '';
+    // Prepare update payload
+    const updateData = {};
+    if (title !== undefined) updateData.title = title.trim();
+    if (description !== undefined) updateData.description = description ? description.trim() : '';
+    if (status !== undefined) updateData.status = status;
+    if (priority !== undefined) updateData.priority = priority;
+    if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
+
+    const updatedTask = await taskService.updateTask(req.params.id, updateData);
+
+    if (!updatedTask) {
+      return ApiResponse.notFound(res, 'Task not found');
     }
 
-    if (status !== undefined) {
-      if (!TASK_STATUS_VALUES.includes(status)) {
-        return ApiResponse.badRequest(
-          res,
-          `Invalid status. Must be one of: ${TASK_STATUS_VALUES.join(', ')}`
-        );
-      }
-      task.status = status;
-    }
-
-    if (priority !== undefined) {
-      if (!TASK_PRIORITY_VALUES.includes(priority)) {
-        return ApiResponse.badRequest(
-          res,
-          `Invalid priority. Must be one of: ${TASK_PRIORITY_VALUES.join(', ')}`
-        );
-      }
-      task.priority = priority;
-    }
-
-    if (dueDate !== undefined) {
-      if (dueDate === null) {
-        task.dueDate = null;
-      } else if (isNaN(Date.parse(dueDate))) {
-        return ApiResponse.badRequest(res, 'Invalid due date format');
-      } else {
-        task.dueDate = new Date(dueDate);
-      }
-    }
-
-    const updatedTask = await task.save();
     return ApiResponse.ok(res, 'Task updated successfully', updatedTask);
   } catch (error) {
-    return ApiResponse.internal(res, 'Failed to update task', error.message);
+    next(error);
   }
 };
 
-exports.deleteTask = async (req, res) => {
+exports.deleteTask = async (req, res, next) => {
   try {
-    const task = await Task.findByIdAndDelete(req.params.id);
+    const task = await taskService.deleteTask(req.params.id);
 
     if (!task) {
       return ApiResponse.notFound(res, 'Task not found');
@@ -143,6 +123,6 @@ exports.deleteTask = async (req, res) => {
 
     return ApiResponse.ok(res, 'Task deleted successfully');
   } catch (error) {
-    return ApiResponse.internal(res, 'Failed to delete task', error.message);
+    next(error);
   }
 };

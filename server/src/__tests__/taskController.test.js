@@ -13,9 +13,9 @@ const {
   deleteTask,
 } = require('../controllers/taskController');
 
-// ── Mock the Task model ──────────────────────────────────
-jest.mock('../models/Task');
-const Task = require('../models/Task');
+// ── Mock the taskService ──────────────────────────────────
+jest.mock('../services/taskService');
+const taskService = require('../services/taskService');
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ describe('createTask', () => {
     };
     const createdTask = { ...taskData, _id: 'abc123' };
 
-    Task.create.mockResolvedValue(createdTask);
+    taskService.createTask.mockResolvedValue(createdTask);
 
     const req = mockReq(taskData);
     const res = mockRes();
@@ -66,7 +66,7 @@ describe('createTask', () => {
     };
     const createdTask = { title: 'Learn Docker', status: 'todo', priority: 'high', _id: 'abc123' };
 
-    Task.create.mockResolvedValue(createdTask);
+    taskService.createTask.mockResolvedValue(createdTask);
 
     const req = mockReq(taskData);
     const res = mockRes();
@@ -75,8 +75,8 @@ describe('createTask', () => {
 
     // Should succeed, NOT return 400
     expect(res.status).toHaveBeenCalledWith(201);
-    // Verify that Task.create was called with lowercased values
-    expect(Task.create).toHaveBeenCalledWith(
+    // Verify that taskService.createTask was called with lowercased values
+    expect(taskService.createTask).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'todo', priority: 'high' })
     );
   });
@@ -84,7 +84,7 @@ describe('createTask', () => {
   test('should accept mixed-case status (e.g. "In-Progress")', async () => {
     const taskData = { title: 'Test', status: 'In-Progress' };
 
-    Task.create.mockResolvedValue({ ...taskData, status: 'in-progress', _id: '1' });
+    taskService.createTask.mockResolvedValue({ ...taskData, status: 'in-progress', _id: '1' });
 
     const req = mockReq(taskData);
     const res = mockRes();
@@ -92,7 +92,7 @@ describe('createTask', () => {
     await createTask(req, res);
 
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(Task.create).toHaveBeenCalledWith(
+    expect(taskService.createTask).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'in-progress' })
     );
   });
@@ -163,7 +163,7 @@ describe('createTask', () => {
   test('should use defaults when status and priority are omitted', async () => {
     const taskData = { title: 'Simple Task' };
 
-    Task.create.mockResolvedValue({ ...taskData, _id: 'x' });
+    taskService.createTask.mockResolvedValue({ ...taskData, _id: 'x' });
 
     const req = mockReq(taskData);
     const res = mockRes();
@@ -171,24 +171,22 @@ describe('createTask', () => {
     await createTask(req, res);
 
     expect(res.status).toHaveBeenCalledWith(201);
-    // status and priority should be undefined (let Mongoose defaults apply)
-    expect(Task.create).toHaveBeenCalledWith(
+    // status and priority should be undefined (let defaults apply in the model/service)
+    expect(taskService.createTask).toHaveBeenCalledWith(
       expect.objectContaining({ title: 'Simple Task' })
     );
   });
 
   test('should handle database errors gracefully', async () => {
-    Task.create.mockRejectedValue(new Error('DB connection failed'));
+    taskService.createTask.mockRejectedValue(new Error('DB connection failed'));
 
     const req = mockReq({ title: 'Test' });
     const res = mockRes();
+    const next = jest.fn();
 
-    await createTask(req, res);
+    await createTask(req, res, next);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ success: false })
-    );
+    expect(next).toHaveBeenCalledWith(expect.any(Error));
   });
 });
 
@@ -204,7 +202,7 @@ describe('getAllTasks', () => {
       { _id: '2', title: 'Task 2' },
     ];
 
-    Task.find.mockReturnValue({ sort: jest.fn().mockResolvedValue(tasks) });
+    taskService.getAllTasks.mockResolvedValue(tasks);
 
     const req = mockReq();
     const res = mockRes();
@@ -218,16 +216,16 @@ describe('getAllTasks', () => {
   });
 
   test('should return 500 on database error', async () => {
-    Task.find.mockReturnValue({
-      sort: jest.fn().mockRejectedValue(new Error('DB error')),
-    });
+    taskService.getAllTasks.mockRejectedValue(new Error('DB error'));
+
 
     const req = mockReq();
     const res = mockRes();
+    const next = jest.fn();
 
-    await getAllTasks(req, res);
+    await getAllTasks(req, res, next);
 
-    expect(res.status).toHaveBeenCalledWith(500);
+    expect(next).toHaveBeenCalledWith(expect.any(Error));
   });
 });
 
@@ -239,7 +237,7 @@ describe('getTaskById', () => {
 
   test('should return a task by ID', async () => {
     const task = { _id: 'abc', title: 'Found Task' };
-    Task.findById.mockResolvedValue(task);
+    taskService.getTaskById.mockResolvedValue(task);
 
     const req = mockReq({}, { id: 'abc' });
     const res = mockRes();
@@ -253,7 +251,7 @@ describe('getTaskById', () => {
   });
 
   test('should return 404 when task not found', async () => {
-    Task.findById.mockResolvedValue(null);
+    taskService.getTaskById.mockResolvedValue(null);
 
     const req = mockReq({}, { id: 'nonexistent' });
     const res = mockRes();
@@ -283,49 +281,48 @@ describe('updateTask', () => {
 
   test('should update task with valid data', async () => {
     const task = makeMockTask();
-    task.save.mockResolvedValue({ ...task, title: 'Updated' });
-    Task.findById.mockResolvedValue(task);
+    taskService.updateTask.mockResolvedValue({ ...task, title: 'Updated' });
 
     const req = mockReq({ title: 'Updated' }, { id: 'task1' });
     const res = mockRes();
+    const next = jest.fn();
 
-    await updateTask(req, res);
+    await updateTask(req, res, next);
 
-    expect(task.title).toBe('Updated');
-    expect(task.save).toHaveBeenCalled();
+    expect(taskService.updateTask).toHaveBeenCalledWith('task1', { title: 'Updated' });
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
   test('should accept UPPERCASE status in update (case-insensitive)', async () => {
     const task = makeMockTask();
-    task.save.mockResolvedValue({ ...task, status: 'done' });
-    Task.findById.mockResolvedValue(task);
+    taskService.updateTask.mockResolvedValue({ ...task, status: 'done' });
 
     const req = mockReq({ status: 'DONE' }, { id: 'task1' });
     const res = mockRes();
+    const next = jest.fn();
 
-    await updateTask(req, res);
+    await updateTask(req, res, next);
 
-    expect(task.status).toBe('done');
+    expect(taskService.updateTask).toHaveBeenCalledWith('task1', { status: 'done' });
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
   test('should accept UPPERCASE priority in update (case-insensitive)', async () => {
     const task = makeMockTask();
-    task.save.mockResolvedValue({ ...task, priority: 'low' });
-    Task.findById.mockResolvedValue(task);
+    taskService.updateTask.mockResolvedValue({ ...task, priority: 'low' });
 
     const req = mockReq({ priority: 'LOW' }, { id: 'task1' });
     const res = mockRes();
+    const next = jest.fn();
 
-    await updateTask(req, res);
+    await updateTask(req, res, next);
 
-    expect(task.priority).toBe('low');
+    expect(taskService.updateTask).toHaveBeenCalledWith('task1', { priority: 'low' });
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
   test('should return 404 if task does not exist', async () => {
-    Task.findById.mockResolvedValue(null);
+    taskService.updateTask.mockResolvedValue(null);
 
     const req = mockReq({ title: 'Nope' }, { id: 'bad-id' });
     const res = mockRes();
@@ -337,7 +334,7 @@ describe('updateTask', () => {
 
   test('should return 400 for invalid status in update', async () => {
     const task = makeMockTask();
-    Task.findById.mockResolvedValue(task);
+    taskService.updateTask.mockResolvedValue(task);
 
     const req = mockReq({ status: 'invalid' }, { id: 'task1' });
     const res = mockRes();
@@ -349,7 +346,7 @@ describe('updateTask', () => {
 
   test('should return 400 for empty title in update', async () => {
     const task = makeMockTask();
-    Task.findById.mockResolvedValue(task);
+    taskService.updateTask.mockResolvedValue(task);
 
     const req = mockReq({ title: '' }, { id: 'task1' });
     const res = mockRes();
@@ -361,15 +358,15 @@ describe('updateTask', () => {
 
   test('should clear dueDate when set to null', async () => {
     const task = makeMockTask({ dueDate: new Date() });
-    task.save.mockResolvedValue({ ...task, dueDate: null });
-    Task.findById.mockResolvedValue(task);
+    taskService.updateTask.mockResolvedValue({ ...task, dueDate: null });
 
     const req = mockReq({ dueDate: null }, { id: 'task1' });
     const res = mockRes();
+    const next = jest.fn();
 
-    await updateTask(req, res);
+    await updateTask(req, res, next);
 
-    expect(task.dueDate).toBeNull();
+    expect(taskService.updateTask).toHaveBeenCalledWith('task1', { dueDate: null });
     expect(res.status).toHaveBeenCalledWith(200);
   });
 });
@@ -381,7 +378,7 @@ describe('deleteTask', () => {
   afterEach(() => jest.restoreAllMocks());
 
   test('should delete an existing task', async () => {
-    Task.findByIdAndDelete.mockResolvedValue({ _id: 'task1' });
+    taskService.deleteTask.mockResolvedValue({ _id: 'task1' });
 
     const req = mockReq({}, { id: 'task1' });
     const res = mockRes();
@@ -395,7 +392,7 @@ describe('deleteTask', () => {
   });
 
   test('should return 404 when deleting non-existent task', async () => {
-    Task.findByIdAndDelete.mockResolvedValue(null);
+    taskService.deleteTask.mockResolvedValue(null);
 
     const req = mockReq({}, { id: 'nonexistent' });
     const res = mockRes();

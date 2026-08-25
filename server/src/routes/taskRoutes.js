@@ -6,16 +6,18 @@ const {
   updateTask,
   deleteTask,
 } = require('../controllers/taskController');
+const validateObjectId = require('../middleware/validateObjectId');
 
 const router = express.Router();
 
 router.route('/').get(getAllTasks).post(createTask);
 
+// Any route that uses :id will first pass through validateObjectId
 router
   .route('/:id')
-  .get(getTaskById)
-  .put(updateTask)
-  .patch(updateTask)
-  .delete(deleteTask);
+  .get(validateObjectId, getTaskById)
+  .put(validateObjectId, updateTask)
+  .patch(validateObjectId, updateTask)
+  .delete(validateObjectId, deleteTask);
 
 module.exports = router;
