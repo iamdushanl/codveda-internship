@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const mongoose = require('mongoose');
 
 const ApiResponse = require('./utils/ApiResponse');
 const taskRoutes = require('./routes/taskRoutes');
@@ -24,8 +25,20 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  const dbStatusMap = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting',
+    99: 'uninitialized',
+  };
+
   return ApiResponse.ok(res, 'TaskFlow server is running', {
     status: 'ok',
+    database: dbStatusMap[dbState] || 'unknown',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
   });
 });
 
