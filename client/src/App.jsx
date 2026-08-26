@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import TaskCard from './components/TaskCard';
@@ -8,6 +8,11 @@ import Tasks from './pages/Tasks';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import './index.css';
+
+const PrivateRoute = ({ children }) => {
+  const user = localStorage.getItem('user');
+  return user ? children : <Navigate to="/login" replace />;
+};
 
 const Dashboard = () => {
   const { tasks, isLoading, error, updateTask } = useTasks();
@@ -79,8 +84,16 @@ function App() {
         
         <main style={{ flex: 1 }}>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/" element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            } />
+            <Route path="/tasks" element={
+              <PrivateRoute>
+                <Tasks />
+              </PrivateRoute>
+            } />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
           </Routes>
