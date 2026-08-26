@@ -14,7 +14,7 @@ const startServer = async () => {
   // 3. Setup Socket.IO
   const io = new Server(server, {
     cors: {
-      origin: "*", // Depending on your production config, you might want to restrict this later
+      origin: process.env.CLIENT_URL || "*", // Depending on your production config, you might want to restrict this later
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
     }
   });

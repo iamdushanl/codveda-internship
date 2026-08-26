@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import TaskCard from './components/TaskCard';
 import { useTasks } from './hooks/useTasks';
+import { SocketProvider } from './context/SocketContext';
 import Tasks from './pages/Tasks';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -66,40 +67,42 @@ const Dashboard = () => {
 
 function App() {
   return (
-    <BrowserRouter>
-      {/* Notifications */}
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: 'var(--bg)',
-            color: 'var(--text-h)',
-            border: '1px solid var(--border)',
-          }
-        }} 
-      />
-      
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <Navbar />
+    <SocketProvider>
+      <BrowserRouter>
+        {/* Notifications */}
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: 'var(--bg)',
+              color: 'var(--text-h)',
+              border: '1px solid var(--border)',
+            }
+          }} 
+        />
         
-        <main style={{ flex: 1 }}>
-          <Routes>
-            <Route path="/" element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            } />
-            <Route path="/tasks" element={
-              <PrivateRoute>
-                <Tasks />
-              </PrivateRoute>
-            } />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-          </Routes>
-        </main>
-      </div>
-    </BrowserRouter>
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+          <Navbar />
+          
+          <main style={{ flex: 1 }}>
+            <Routes>
+              <Route path="/" element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              } />
+              <Route path="/tasks" element={
+                <PrivateRoute>
+                  <Tasks />
+                </PrivateRoute>
+              } />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+            </Routes>
+          </main>
+        </div>
+      </BrowserRouter>
+    </SocketProvider>
   );
 }
 

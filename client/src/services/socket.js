@@ -1,9 +1,9 @@
 import { io } from 'socket.io-client';
 
-const URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-// socket.io typically connects to the root domain, not the /api path.
-// So we remove '/api' if it's present at the end of the URL.
-const socketURL = URL.replace(/\/api$/, '');
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Fallback: socket.io typically connects to the root domain, not the /api path.
+const fallbackSocketURL = API_URL.replace(/\/api$/, '');
+const socketURL = import.meta.env.VITE_SOCKET_URL || fallbackSocketURL;
 
 export const socket = io(socketURL, {
   autoConnect: true,
