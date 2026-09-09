@@ -8,6 +8,11 @@ const taskSchema = new mongoose.Schema(
       required: true,
       ref: 'User',
     },
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
     title: {
       type: String,
       required: [true, 'Task title is required'],
@@ -54,6 +59,7 @@ const taskSchema = new mongoose.Schema(
 taskSchema.index({ status: 1 });
 taskSchema.index({ priority: 1 });
 taskSchema.index({ dueDate: 1 });
+taskSchema.index({ assignedTo: 1 });
 taskSchema.index({ createdAt: -1 });
 
 // ── Pre-save hook: sync `completed` with status ─────────

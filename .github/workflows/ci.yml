@@ -1,0 +1,129 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# CI pipeline for the front-end (client/)
+#
+# Runs on every push and on every PR targeting main.
+# Required-to-merge checks (enforce via GitHub branch-protection rules):
+#   ✅ lint    — oxlint; fails fast on rule violations
+#   ✅ build   — vite build; proves the bundle compiles
+#   ⬜ test    — placeholder; uncomment when you add Vitest / Jest
+#
+# Future expansion (Week 11): add a backend-image job that builds & pushes
+# the Docker image to ECR and deploys to App Runner / ECS.
+# ──────────────────────────────────────────────────────────────────────────────
+
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+# Cancel an in-progress run for the same branch/PR when a new commit is pushed.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── 1. Lint ────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint (oxlint)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Run oxlint
+        working-directory: client
+        run: npm run lint
+
+  # ── 2. Build ───────────────────────────────────────────────────────────────
+  build:
+    name: Build (vite)
+    runs-on: ubuntu-latest
+    # Build can run in parallel with lint; both must pass for a green check.
+    needs: []
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Build
+        working-directory: client
+        # VITE_* variables must be set for the build to succeed if they are
+        # referenced at import time.  Add real secrets in:
+        # Settings -> Secrets and variables -> Actions -> New repository secret
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://localhost:5000' }}
+        run: npm run build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-dist
+          path: client/dist
+          retention-days: 3
+
+  # ── 3. Test (placeholder — uncomment when you have a test runner) ──────────
+  # test:
+  #   name: Test (vitest)
+  #   runs-on: ubuntu-latest
+  #   needs: []
+  #
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         cache: npm
+  #         cache-dependency-path: client/package-lock.json
+  #
+  #     - name: Install dependencies
+  #       working-directory: client
+  #       run: npm ci
+  #
+  #     - name: Run tests
+  #       working-directory: client
+  #       run: npm test          # maps to: "test": "vitest run" in package.json
+
+  # ── 4. Summary gate ────────────────────────────────────────────────────────
+  # A single "all-green" job that branch-protection rules can target instead of
+  # listing every individual job.  Add "test" to `needs` once tests exist.
+  all-checks:
+    name: All checks passed
+    runs-on: ubuntu-latest
+    needs: [lint, build]
+    if: always()
+    steps:
+      - name: Evaluate results
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" || \
+                "${{ needs.build.result }}" != "success" ]]; then
+            echo "One or more required checks failed."
+            exit 1
+          fi
+          echo "All required checks passed."
