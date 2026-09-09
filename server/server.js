@@ -62,10 +62,4 @@ const startServer = async () => {
   // Inject io into app to be used in routes/controllers
   app.set('io', io);
 
-  // 4. Start Server
-  server.listen(config.port, () => {
-    console.log(`🚀 Server running on port ${config.port}`);
-  });
-};
-
-startServer();
+  
